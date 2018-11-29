@@ -16,16 +16,14 @@ Citizen.CreateThread(function()
         Citizen.Wait(1)
         if IsControlJustReleased(0, Keys['E']) and IsControlPressed(0, Keys["LEFTSHIFT"]) and Config.AllowSkillModificaton then
             ShowSkills()
-        end
-        if IsControlJustReleased(0, Keys['E']) and IsControlPressed(0, Keys["LEFTCTRL"]) and Config.AllowSkillModificaton then
-            ShowSkills()
+        elseif IsControlJustReleased(0, Keys['E']) and IsControlPressed(0, Keys["LEFTCTRL"]) and Config.AllowSkillModificaton then
+            --EShowSkills()
         end
     end
 end)
 
 function ShowSkills()
-    ESX.TriggerServerCallback("esx_jobs_skill:getAllSkills", function(skills)
-
+    ESX.TriggerServerCallback("esx_jobs_skill:getSkills", function(skills)
         local skills_rows = {}
         local skills_sum = 0
 
@@ -33,9 +31,10 @@ function ShowSkills()
             table.insert(skills_rows, {
                 data = name,
                 cols = {
-                    skill.label, 
+                    _U(skill.craft_cycle),
+                    _U(skill.name),
                     skill.level,
-                    '{{' .. _U('forget_all') .. '|all}} {{' .. _U('forget_part') .. '|some}}'
+                    '{{' .. _U('forget_all') .. '|all}}'
                 }
             })
             skills_sum = skills_sum + tonumber(skill.level)
@@ -44,15 +43,14 @@ function ShowSkills()
         table.insert(skills_rows, {
             data = 'sum',
             cols = {
-                'Total', 
-                skills_sum,
-                ''
+                '','','',
+                'Total:' .. skills_sum
             }
         })
 
         local skills_menu = {
             title = _U('skill_list_title'),
-            head = {_U('skill_list_table_title_name'), _U('skill_list_table_title_level'), _U('skill_list_table_title_action')},
+            head = {_U('skill_list_table_title_category'), _U('skill_list_table_title_name'), _U('skill_list_table_title_level'), _U('skill_list_table_title_action')},
             rows = skills_rows
         }
 
@@ -62,9 +60,7 @@ function ShowSkills()
             function(response, menu)
                 menu.close()
                 if response.value == 'all' then
-                    ForgetSkill(response.data, 100)
-                elseif response.value == 'some' then
-                    ShowForgetSkill(response.data)
+                    ForgetSkill(skills[response.data])
                 end
             end,
             function(response, menu)
@@ -74,25 +70,8 @@ function ShowSkills()
     end)
 end
 
-function ShowForgetSkill(skill)
-    ESX.UI.Menu.Open(
-        'dialog', GetCurrentResourceName(), 'skill_forget_confirmation',
-        {
-            title = _U('skill_forget_dialog_title')
-        },
-        function(response, menu)
-            local qty = tostring(response.value)                              
-            menu.close()
-            ForgetSkill(skill, qty)
-        end,
-        function(response, menu)
-            menu.close()
-        end
-    ) 
-end
-
-function ForgetSkill(skill, qty)
-    ESX.TriggerServerCallback("esx_jobs_skill:removeSkillLevel", function()end, skill, qty)
+function ForgetSkill(skill)
+    ESX.TriggerServerCallback("esx_jobs_skill:removeSkill", function()end, skill)
 end
 
 RegisterNetEvent('esx_jobs_skill:anim')

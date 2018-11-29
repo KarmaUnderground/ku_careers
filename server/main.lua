@@ -6,9 +6,9 @@ function commit_skills(xPlayer)
     local player_skills = get_skills(xPlayer)
 
     for name, skill in pairs(player_skills) do
-        MySQL.Async.execute('UPDATE `user_skills` SET `level` = @Level WHERE `identifier` = @Identifier AND `name` = @Name',
+        MySQL.Async.execute('UPDATE `user_skills` SET `tries` = @tries WHERE `identifier` = @Identifier AND `name` = @Name',
         {
-            ['@Level']      = skill.level,
+            ['@tries']      = skill.tries,
             ['@Identifier'] = xPlayer.identifier,
             ['@Name']       = skill.name
         })
@@ -17,17 +17,22 @@ end
 
 function get_skills(xPlayer)
     local player_skills = xPlayer.get('skills')
+    local formated_skill = nil
 
-    if player_skills == nil then -- Skills have not been initiated
+    if not player_skills then -- Skills have not been initiated
         math.randomseed(os.time()) -- Should be removed from here and added to a global server function and be run once
+
         player_skills = {}
 
-        local result = MySQL.Sync.fetchAll('SELECT `name`, `tries` FROM `user_skills` WHERE `identifier` = @Identifier', {
+        local result = MySQL.Sync.fetchAll('SELECT `name`, `tries`, `craft_cycle` FROM `user_skills` WHERE `identifier` = @Identifier ORDER BY `craft_cycle`', {
             ['@Identifier'] = xPlayer.identifier
         })
 
         for i=1, #result, 1 do
-            player_skills[result[i].name] = format_skill(xPlayer, result[i].name, result[i].tries)
+            formated_skill = format_skill(result[i])
+            if formated_skill then
+                player_skills[formated_skill.name] = formated_skill
+            end
         end
 
         xPlayer.set('skills', player_skills)
@@ -58,7 +63,13 @@ function get_skill(xPlayer, name)
     local player_skill = player_skills[name]
 
     if not player_skill then -- This skill does not exists
-        player_skills[name] = format_skill(xPlayer, name, 0, true)
+        local formated_skill = format_skill(name, 0, true)
+
+        if not formated_skill then
+            return nil
+        end
+
+        player_skills[name] = formated_skill
         xPlayer.set('skills', player_skills)
 
         MySQL.Async.execute('INSERT INTO `user_skills` (`identifier`, `name`, `level`) VALUES (@Identifire, @Name, @Level)',
@@ -68,19 +79,37 @@ function get_skill(xPlayer, name)
             ['@Level']      = 0
         })
 
-        TriggerClientEvent('esx:showNotification', xPlayer.source, _U("skill_new", player_skills[name].label))
+        TriggerClientEvent('esx:showNotification', xPlayer.source, _U("skill_new", _U(player_skills[name].name)))
     end
 
     return player_skills[name]
 end
 
-function format_skill(xPlayer, name, level)
+function format_skill(skill)
+    if not Config.Jobs[skill.craft_cycle] then
+        return nil
+    end
 
-    return {
-        name = name,
-        level = level,
-        label = _U(name)
+    local formatted_skill = {
+        craft_cycle = skill.craft_cycle,
+        name = skill.name,
+        tries = skill.tries,
+        level = get_level_from_tries(skill)
     }
+
+    return formatted_skill
+end
+
+function get_level_from_tries(skill)
+    local job = Config.Jobs[skill.craft_cycle]
+    local craft_cycle = job.craft_cycles[skill.name]
+    local skill_rate = craft_cycle.skill_rate
+
+    local level = 0
+    level = math.sqrt((skill_rate*skill_rate) - ((skill_rate - skill.tries) * (skill_rate - skill.tries)))
+    level = ESX.Round(((level/skill_rate)*100),1)
+
+    return level
 end
 
 function remove_skill(xPlayer, skill)
@@ -96,43 +125,41 @@ function remove_skill(xPlayer, skill)
     })
 end
 
-function set_skill_level(xPlayer, skill, level, show_message)
-    if level <= 0 then 
+function set_skill_tries(xPlayer, skill, tries, show_message)
+    if tries <= 0 then 
         remove_skill(xPlayer, skill)
 
         if show_message == true then 
-            TriggerClientEvent('esx:showNotification', xPlayer.source, _U("skill_removed", skill.label))
+            TriggerClientEvent('esx:showNotification', xPlayer.source, _U("skill_removed", _U(skill.name)))
         end
     else
         local player_skills = get_skills(xPlayer)
 
-        player_skills[skill.name].level = level
+        player_skills[skill.name].tries = tries
+        player_skills[skill.name].level = get_level_from_tries(player_skills[skill.name])
+
         xPlayer.set('skills', player_skills)
 
         commit_skills(xPlayer)
 
         if show_message == true then 
-            TriggerClientEvent('esx:showNotification', xPlayer.source, _U("skill_modified", skill.label, level))
+            TriggerClientEvent('esx:showNotification', xPlayer.source, _U("skill_modified", _U(skill.name), level))
         end
     end
-end
-
-function base_100_skill(xPlayer, skill)
-    
 end
 
 function increase_skill(xPlayer, skill)
     local roll = math.random(1000) / 10
 
     if skill.level < roll then
-    set_skill_level(xPlayer, skill, skill.level + 0.1)
+        set_skill_tries(xPlayer, skill, skill.tries + 1)
 
         local skills_stats = get_skills_stats(xPlayer)
         if skills_stats.sum > Config.GlobalSkillLimit then 
             decrease_random_skill(xPlayer, skill)
         end
 
-        TriggerClientEvent('esx:showNotification', xPlayer.source, _U('skill_up', skill.label, skill.level + 0.1))
+        TriggerClientEvent('esx:showNotification', xPlayer.source, _U('skill_up', _U(skill.name), skill.level + 0.1))
     end
 end
 
@@ -159,9 +186,9 @@ function decrease_random_skill(xPlayer, not_skill)
             end
         end
 
-        set_skill_level(xPlayer, skill, skill.level - 0.1)
+        set_skill_tries(xPlayer, skill, skill.tries - 1)
 
-        TriggerClientEvent('esx:showNotification', xPlayer.source, _U('skill_down', skill.label, skill.level - 0.1))
+        TriggerClientEvent('esx:showNotification', xPlayer.source, _U('skill_down', _U(skill.name), skill.tries - 1))
     end
 end
 
@@ -184,15 +211,17 @@ function execute_skill(xPlayer, skill)
     end
 end
 
-ESX.RegisterServerCallback('esx_jobs_skill:getAllSkills', function(source, cb)
-    cb(get_skills(ESX.GetPlayerFromId(source)))
+ESX.RegisterServerCallback('esx_jobs_skill:getSkills', function(source, cb)
+    local xPlayer = ESX.GetPlayerFromId(source)
+    local skills = get_skills(xPlayer)
+
+    cb(skills)
 end)
 
-ESX.RegisterServerCallback('esx_jobs_skill:removeSkillLevel', function(source, cb, name, level)
+ESX.RegisterServerCallback('esx_jobs_skill:removeSkill', function(source, cb, skill)
     local xPlayer = ESX.GetPlayerFromId(source)
-    local skill = get_skill(xPlayer, name)
 
-    set_skill_level(xPlayer, skill, skill.level - level, true)
+    remove_skill(xPlayer, skill)
 
     cb()
 end)

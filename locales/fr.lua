@@ -8,6 +8,7 @@ Locales['fr'] = {
     ['skill_forget_dialog_title'] = 'Combien de points voulez-vous retirer?',
 
     ['skill_list_title'] = 'Vos compétences',
+    ['skill_list_table_title_category'] = 'Catégorie',
     ['skill_list_table_title_name'] = 'Compétence',
     ['skill_list_table_title_level'] = 'Niveau',
     ['skill_list_table_title_action'] = 'Actions',
@@ -17,7 +18,11 @@ Locales['fr'] = {
 
     ['delivery'] = 'livraison',
 
-    -- Fuel
+    -- Gas
+    ['gas']   = 'Essence',
+    ['refined_oil'] = 'Pétrol raffiné',
+    ['oil'] = 'Pétrol',
+
     ['f_oil_refiner']             = 'vestiaire du raffineur',
     ['f_drill_oil']               = 'extraction le pétrole',
     ['f_fuel']                    = 'pétrole',
@@ -29,10 +34,6 @@ Locales['fr'] = {
     ['f_fuel_mixture_button']     = 'appuyez sur ~INPUT_PICKUP~ pour mélanger.',
     ['f_deliver_gas']             = 'livraison d\'essence.',
     ['f_deliver_gas_button']      = 'appuyez sur ~INPUT_PICKUP~ pour livrer l\'essence.',
-
-    ['petrol']        = 'pétrole',
-    ['petrol_raffin'] = 'pétrol raffiné',
-    ['essence']       = 'essence',
 
     ['wheat'] = 'Blé',
     ['flour'] = 'Farine',

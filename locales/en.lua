@@ -8,6 +8,7 @@ Locales['en'] = {
     ['skill_forget_dialog_title'] = 'How many points do you want to remove?',
 
     ['skill_list_title'] = 'Your skills',
+    ['skill_list_table_title_category'] = 'Catrgory',
     ['skill_list_table_title_name'] = 'Skill',
     ['skill_list_table_title_level'] = 'Level',
     ['skill_list_table_title_action'] = 'Actions',
@@ -17,7 +18,11 @@ Locales['en'] = {
 
     ['delivery'] = 'delivery',
 
-    -- Fuel
+    -- Gas
+    ['gas']   = 'Gas',
+    ['refined_oil'] = 'raffiné',
+    ['oil'] = 'Pétrol',
+
     ['f_oil_refiner']             = 'oil Refiner Locker Room',
     ['f_drill_oil']               = 'drill for oil',
     ['f_fuel']                    = 'oil',
@@ -29,10 +34,6 @@ Locales['en'] = {
     ['f_fuel_mixture_button']     = 'press ~INPUT_PICKUP~ to mix oil.',
     ['f_deliver_gas']             = 'deliver Gas',
     ['f_deliver_gas_button']      = 'press ~INPUT_PICKUP~ to deliver gasoline.',
-
-    ['petrol']         = 'oil',
-    ['petrol_raffin']  = 'refine oil',
-    ['essence']        = 'gas',
 
     ['wheat'] = 'Wheat',
     ['flour'] = 'Flour',

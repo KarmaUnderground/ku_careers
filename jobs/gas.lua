@@ -11,8 +11,7 @@ Config.Jobs.gas.steps = {
         requires = "nothing",
         requires_name = "Nothing",
         skill_rate = 5000,
-        craft_cycle_step = 1,
-        craft_type = "gathering",
+        work_type = "gather",
         position = {
             Pos = {x = 609.58, y = 2856.74, z = 38.90},
             Size = {x = 20.0, y = 20.0, z = 1.0},
@@ -49,8 +48,7 @@ Config.Jobs.gas.steps = {
         requires = "oil",
         requires_name = _U("oil"),
         skill_rate = 5000,
-        craft_cycle_step = 2,
-        craft_type = "transform",
+        work_type = "transform",
         position = {
             Pos = {x = 2736.94, y = 1417.99, z = 23.48},
             Size = {x = 10.0, y = 10.0, z = 1.0},
@@ -87,8 +85,7 @@ Config.Jobs.gas.steps = {
         requires = "refined_oil",
         requires_name = _U("refined_oil"),
         skill_rate = 5000,
-        craft_cycle_step = 3,
-        craft_type = "transform",
+        work_type = "transform",
         position = {
             Pos = {x = 265.75, y = -3013.39, z = 4.73},
             Size = {x = 10.0, y = 10.0, z = 1.0},

@@ -40,6 +40,10 @@ Locales['fr'] = {
 
     ['delivery'] = 'livraison',
 
+    ['work_failed'] = 'Vous avez échoué à ~y~%s~s~ la ressource ~y~%s~s~',
+    ['gather'] = 'Récolter',
+    ['transform'] = 'Transformer',
+
     -- Gas
     ['gas']   = 'Essence',
     ['oil'] = 'Pétrol',

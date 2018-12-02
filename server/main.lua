@@ -199,9 +199,13 @@ function decrease_random_skill(xPlayer, not_skill)
 end
 
 function execute_skill(xPlayer, skill)
+    local step = Config.Jobs[skill.job].steps[skill.name]
+
     local mood = "bad"
     local diff = 12.5
     local variace = 0.8
+
+    local add = 0
 
     local roll_skill = math.random(1000) / 10
 
@@ -209,11 +213,14 @@ function execute_skill(xPlayer, skill)
         mood = "good"
 
         local roll_qty = rand_normal(skill.level - diff, skill.level + diff, variace, 0.1, 100)
+
 --        local multiplyer = Config.jobs[skill.job].steps[skill.name].add
         local multiplyer = 1
 
-        xPlayer.addInventoryItem(skill.name, (math.floor(roll_qty/25)+1)*multiplyer)
+        add = (math.floor(roll_qty/25)+1)*multiplyer
     end
+
+    xPlayer.addInventoryItem(skill.name, add)
 
     if Config.PlayAnimation then
         TriggerClientEvent("esx_jobs_skill:anim", xPlayer.source, mood)

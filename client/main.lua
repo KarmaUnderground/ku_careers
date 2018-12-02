@@ -135,7 +135,14 @@ end
 function vendorBuy(step, qty)
     ESX.TriggerServerCallback("esx_jobs_skill:vendorBuy", function(response)
         if response.transaction.status == "success" then
-            ESX.ShowNotification(_U('vendor_transaction_sell_success', response.transaction.quantity, string.lower(_U(step.unit)), string.lower(_U(step.db_name))))
+            ESX.ShowNotification(
+                _U('vendor_transaction_sell_success',
+                    response.transaction.quantity,
+                    string.lower(_U(step.unit)),
+                    string.lower(_U(step.db_name)),
+                    formatMoney(response.transaction.total)
+                )
+            )
         else
             ESX.ShowNotification(_U(response.transaction.message, string.lower(_U(step.db_name))))
         end
@@ -145,11 +152,22 @@ end
 function vendorSell(step, qty)
     ESX.TriggerServerCallback("esx_jobs_skill:vendorSell", function(response)
         if response.transaction.status == "success" then
-            ESX.ShowNotification(_U('vendor_transaction_buy_success', response.transaction.quantity, string.lower(_U(step.unit)), string.lower(_U(step.db_name))))
+            ESX.ShowNotification(
+                _U('vendor_transaction_buy_success',
+                    response.transaction.quantity,
+                    string.lower(_U(step.unit)),
+                    string.lower(_U(step.db_name)),
+                    formatMoney(response.transaction.total)
+                )
+            )
         else
             ESX.ShowNotification(_U(response.transaction.message, step.max, string.lower(_U(step.unit)), string.lower(_U(step.db_name))))
         end
     end, step.db_name, qty)
+end
+
+function formatMoney(amount)
+    return  _U("$_before") .. amount .. _U("$_after")
 end
 
 function canSeeMarker(marker)

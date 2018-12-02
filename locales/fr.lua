@@ -33,8 +33,8 @@ Locales['fr'] = {
     ['vendor_menu_qty_question'] = 'Combien de %s de %s voulez-vous %s?',
 
     ['vendor_too_many_items_in_inventory'] = 'Vous avez déjà ~y~%s~s~ %s de ~y~%s~s~',
-    ['vendor_transaction_sell_success'] = 'Vous avez vendu ~y~%s~s~ %s de ~y~%s~s~',
-    ['vendor_transaction_buy_success'] = 'Vous avez acheté ~y~%s~s~ %s de ~y~%s~s~',
+    ['vendor_transaction_sell_success'] = 'Vous avez vendu ~y~%s~s~ %s de ~y~%s~s~ pour un total de: ~g~%s~s~',
+    ['vendor_transaction_buy_success'] = 'Vous avez acheté ~y~%s~s~ %s de ~y~%s~s~ pour un total de: ~g~%s~s~',
     ['vendor_no_money'] = 'Vous n\'avez pas d\'argent',
     ['vendor_no_item_in_inventory'] = 'Vous n\'avez pas de ~y~%s~s~ à vendre',
 

@@ -210,7 +210,6 @@ function execute_skill(xPlayer, skill)
 
         local roll_qty = rand_normal(skill.level - diff, skill.level + diff, variace, 0.1, 100)
 --        local multiplyer = Config.jobs[skill.job].steps[skill.name].add
-
         local multiplyer = 1
 
         xPlayer.addInventoryItem(skill.name, (math.floor(roll_qty/25)+1)*multiplyer)
@@ -229,6 +228,7 @@ ESX.RegisterServerCallback('esx_jobs_skill:vendorSell', function(source, cb, ste
     local transaction_status = 'success'
     local transaction_status_message = ''
     local transaction_quantity = qty
+    local transaction_total = 0
 
     local inventoryItem = xPlayer.getInventoryItem(step.db_name)
     local inventory_count = inventoryItem and xPlayer.getInventoryItem(step.db_name).count or 0
@@ -242,13 +242,12 @@ ESX.RegisterServerCallback('esx_jobs_skill:vendorSell', function(source, cb, ste
     end
 
     if transaction_quantity > 0 then
-        local transaction_total = step.vendor.price_sell * transaction_quantity
-
-        if xPlayer.getMoney() >= step.vendor.price_sell then
-            if xPlayer.getMoney() < transaction_total then
+        if xPlayer.getMoney() >= step.vendor.price_sell then -- Can at least buy 1
+            if xPlayer.getMoney() < transaction_total then -- Can't buy all
                 transaction_quantity = math.floor(xPlayer.getMoney()/step.vendor.price_sell)
-                transaction_total = step.vendor.price_sell * transaction_quantity
             end
+            transaction_total = step.vendor.price_sell * transaction_quantity
+
             xPlayer.removeMoney(transaction_total)
             xPlayer.addInventoryItem(step.db_name, transaction_quantity)
         else
@@ -310,7 +309,7 @@ ESX.RegisterServerCallback('esx_jobs_skill:getSkills', function(source, cb)
     cb(skills)
 end)
 
-TriggerEvent('esx_jobs:registerHook', "overrides", "add_item", function (params)
+TriggerEvent('esx_jobs:registerHook', "overrides", "add_item", "ku_jobs_skills_execute_skill", function (params)
     local xPlayer = params.xPlayer
     local item = params.item
 

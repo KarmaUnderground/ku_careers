@@ -26,6 +26,9 @@ client_scripts {
 	'locales/en.lua',
 	'locales/fr.lua',
 	'config.lua',
+
+	'jobs/gas.lua',
+	
 	'client/main.lua'
 }
 

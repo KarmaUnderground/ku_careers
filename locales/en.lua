@@ -1,4 +1,9 @@
 Locales['en'] = {
+    ['buy'] = 'Buy',
+    ['sell'] = 'Sell',
+
+    ['quantity'] = 'Quantity',
+
     ['skill_up']       = 'You\'ve learned something. Your skill ~y~%s~s~ is: ~y~%s~s~',
     ['skill_down']     = 'You\'ve forgot something. Your skill ~y~%s~s~ is: ~y~%s~s~',
     ['skill_removed']  = 'You\'ve forgot the skill ~y~%s~s~',
@@ -15,6 +20,10 @@ Locales['en'] = {
 
     ['forget_all']     = 'Forget all',
     ['forget_part']    = 'Forget some',
+
+
+    ['vendor_menu_action_buy'] = 'Buy %s for %s%s%s/%s',
+    ['vendor_menu_action_sell'] = 'Sell %s for %s%s%s/%s',
 
     ['delivery'] = 'delivery',
 

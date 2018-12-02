@@ -21,7 +21,7 @@ function transform_job_2_esx_jobs(jobs)
             trans_job.Zones[craft_cycle].Item[1].position = nil
 
             if craft_cycle == name then
-                trans_job.Delivery =  trans_job.Zones[craft_cycle].Item[1].vendor
+                --trans_job.Delivery =  trans_job.Zones[craft_cycle].Item[1].vendor
 
                 trans_job.Delivery.Item.requires = job_data.db_name
                 trans_job.Delivery.Item.requires_name = job_data.name

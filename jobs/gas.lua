@@ -1,10 +1,11 @@
 Config.Jobs.gas = {}
 Config.Jobs.gas.craft_cycles = {
     oil = {
-        name = _U("f_fuel"),
+        name = _U("oil_name"),
         db_name = "oil",
+        unit = "oil_unit",
         time = 5000,
-        max = 24,
+        max = 50,
         add = 1,
         remove = 1,
         requires = "nothing",
@@ -18,21 +19,35 @@ Config.Jobs.gas.craft_cycles = {
             Color = {r = 204, g = 204, b = 0},
             Marker = 1,
             Blip = true,
-            Name = _U("f_drill_oil"),
+            Name = _U("oil_action_name"),
             Type = "work",
-            Hint = _U("f_drillbutton"),
+            Hint = _U("f_drillbutton"), -- Changer
             GPS = {x = 2736.94, y = 1417.99, z = 23.48}
+        },
+        vendor = {
+            Pos = {x = 604.62, y = 2919.60, z = 38.75},
+            Color = {r = 0, g = 204, b = 0},
+            Size = {x = 10.0, y = 10.0, z = 1.0},
+            Marker = 1,
+            Blip = true,
+            Name = _U("oil_deliver"),
+            Type = "vendor",
+            Spawner = 1,
+            price_buy = 5,
+            price_sell = 50,
+            Hint = _U("f_deliver_gas_button") -- Changer
         }
     },
     refined_oil = {
         name = _U("f_fuel_refine"),
         db_name = "refined_oil",
+        unit = "refined_oil_unit",
         time = 5000,
-        max = 24,
-        add = 1,
-        remove = 2,
-        requires = "petrol",
-        requires_name = _U("f_fuel"),
+        max = 100,
+        add = 4,
+        remove = 1,
+        requires = "oil",
+        requires_name = _U("oil"),
         skill_rate = 5000,
         craft_cycle_step = 2,
         craft_type = "transform",
@@ -46,17 +61,31 @@ Config.Jobs.gas.craft_cycles = {
             Type = "work",
             Hint = _U("f_refine_fuel_button"),
             GPS = {x = 265.75, y = -3013.39, z = 4.73}
+        },
+        vendor = {
+            Pos = {x = 2689.35, y = 1506.57, z = 23.50},
+            Color = {r = 0, g = 204, b = 0},
+            Size = {x = 10.0, y = 10.0, z = 1.0},
+            Marker = 1,
+            Blip = true,
+            Name = _U("refined_oil_deliver"),
+            Type = "vendor",
+            Spawner = 1,
+            price_buy = 5,
+            price_sell = 50,
+            Hint = _U("f_deliver_gas_button") -- Changer
         }
     },
     gas = {
         name = _U("f_gas"),
         db_name = "gas",
+        unit = "gas_unit",
         time = 5000,
-        max = 24,
+        max = 200,
         add = 2,
         remove = 1,
-        requires = "petrol_raffin",
-        requires_name = _U("f_fuel_refine"),
+        requires = "refined_oil",
+        requires_name = _U("refined_oil"),
         skill_rate = 5000,
         craft_cycle_step = 3,
         craft_type = "transform",
@@ -73,29 +102,16 @@ Config.Jobs.gas.craft_cycles = {
         },
         vendor = {
             Pos = {x = 491.40, y = -2163.37, z = 4.91},
-            Color = {r = 204, g = 204, b = 0},
+            Color = {r = 0, g = 204, b = 0},
             Size = {x = 10.0, y = 10.0, z = 1.0},
             Marker = 1,
             Blip = true,
             Name = _U("f_deliver_gas"),
-            Type = "delivery",
+            Type = "vendor",
             Spawner = 1,
-            Item = {
-                {
-                    name = _U("delivery"),
-                    time = 500,
-                    remove = 1,
-                    max = 100, -- if not present, probably an error at itemQtty >= item.max in esx_jobs_sv.lua
-                    price = 61,
-                    drop = 100
-                }
-            },
-
-            Hint = _U("f_deliver_gas_button"),
-            GPS = {x = 609.58, y = 2856.74, z = 39.49}
-        },
-        seller = {
-
+            price_buy = 5,
+            price_sell = 50,
+            Hint = _U("f_deliver_gas_button") -- Changer
         }
     }
 }

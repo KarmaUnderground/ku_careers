@@ -1,4 +1,13 @@
 Locales['fr'] = {
+    ['buy'] = 'Acheter',
+    ['sell'] = 'Vendre',
+    ['cancel'] = 'Annuler',
+
+    ['$_before'] = '',
+    ['$_after'] = '$',
+
+    ['quantity'] = 'Quantité',
+
     ['skill_up']       = 'Vous avez appris quelque chose. Votre niveau ~y~%s~s~ est: ~y~%s~s~',
     ['skill_down']       = 'Vous avez oublié quelque chose. Votre niveau ~y~%s~s~ est: ~y~%s~s~',
     ['skill_removed']  = 'Votre avez complètement oublié ~y~%s~s~',
@@ -16,17 +25,36 @@ Locales['fr'] = {
     ['forget_all']     = 'Tout oublier',
     ['forget_part']    = 'Oublier une partie',
 
+    ['vendor_menu_title'] = 'Menu du commercant: %s',
+    ['vendor_menu_action_buy'] = 'Acheter %s: %s%s%s/%s',
+    ['vendor_menu_action_sell'] = 'Vendre %s: %s%s%s/%s',
+
+    ['vendor_menu_qty_title'] = 'Quantité',
+    ['vendor_menu_qty_question'] = 'Combien de %s de %s voulez-vous %s?',
+
+    ['vendor_too_many_items_in_inventory'] = 'Vous avez déjà ~y~%s~s~ %s de ~y~%s~s~',
+    ['vendor_transaction_sell_success'] = 'Vous avez vendu ~y~%s~s~ %s de ~y~%s~s~',
+    ['vendor_transaction_buy_success'] = 'Vous avez acheté ~y~%s~s~ %s de ~y~%s~s~',
+    ['vendor_no_money'] = 'Vous n\'avez pas d\'argent',
+    ['vendor_no_item_in_inventory'] = 'Vous n\'avez pas de ~y~%s~s~ à vendre',
+
     ['delivery'] = 'livraison',
 
     -- Gas
     ['gas']   = 'Essence',
-    ['refined_oil'] = 'Pétrol raffiné',
     ['oil'] = 'Pétrol',
+    ['oil_unit'] = 'baril',
+    ['oil_action'] = 'extraire le pétrole',
+    ['oil_hint'] = 'appuyez sur ~INPUT_PICKUP~ pour forer de pétrole.',
+
+    ['refined_oil_hint'] = 'appuyez sur ~INPUT_PICKUP~ pour raffiner le pétrole.',
+    ['refined_oil'] = 'Pétrol raffiné',
+    ['refined_oil_unit'] = 'baril',
+
+    ['gas_hint'] = 'appuyez sur ~INPUT_PICKUP~ vendre votre essence.',
+    ['gas_unit'] = 'baril',
 
     ['f_oil_refiner']             = 'vestiaire du raffineur',
-    ['f_drill_oil']               = 'extraction le pétrole',
-    ['f_fuel']                    = 'pétrole',
-    ['f_drillbutton']             = 'appuyez sur ~INPUT_PICKUP~ pour forer.',
     ['f_fuel_refine']             = 'pétrol raffiné',
     ['f_refine_fuel_button']      = 'appuyez sur ~INPUT_PICKUP~ pour raffiner le pétrole.',
     ['f_fuel_mixture']            = 'mélange',

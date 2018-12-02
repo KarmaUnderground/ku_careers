@@ -9,7 +9,7 @@ CREATE TABLE `user_skills` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
 INSERT INTO `items` (`name`, `label`, `limit`, `rare`, `can_remove`) VALUES ('gas', 'Essence', '200', '0', '1');
-INSERT INTO `items` (`name`, `label`, `limit`, `rare`, `can_remove`) VALUES ('oil_raffin', 'Pétrole Raffiné', '200', '0', '1');
+INSERT INTO `items` (`name`, `label`, `limit`, `rare`, `can_remove`) VALUES ('refined_oil', 'Pétrole Raffiné', '200', '0', '1');
 INSERT INTO `items` (`name`, `label`, `limit`, `rare`, `can_remove`) VALUES ('oil', 'Pétrole', '200', '0', '1');
 
 INSERT INTO `jobs` (`name`, `label`) VALUES ('gas', 'Essence');

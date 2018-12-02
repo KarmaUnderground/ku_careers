@@ -59,11 +59,16 @@ function get_skills_stats(xPlayer)
 end
 
 function get_skill(xPlayer, name)
+    -- TODO: must inclue the job:  get_skill(xPlayer, job_name, skill_name)
     local player_skills = get_skills(xPlayer)
     local player_skill = player_skills[name]
 
     if not player_skill then -- This skill does not exists
-        local formated_skill = format_skill(name, 0, true)
+        local formated_skill = format_skill({
+            craft_cycle = xPlayer.job.name,
+            name = name,
+            tries = 0,
+        })
 
         if not formated_skill then
             return nil
@@ -72,11 +77,12 @@ function get_skill(xPlayer, name)
         player_skills[name] = formated_skill
         xPlayer.set('skills', player_skills)
 
-        MySQL.Async.execute('INSERT INTO `user_skills` (`identifier`, `name`, `level`) VALUES (@Identifire, @Name, @Level)',
+        MySQL.Async.execute('INSERT INTO `user_skills` (`identifier`, `name`, `tries`, `craft_cycle`) VALUES (@Identifire, @Name, @Tries, @CraftCycle)',
         {
             ['@Identifire'] = xPlayer.identifier,
             ['@Name']       = name,
-            ['@Level']      = 0
+            ['@Tries']      = 0,
+            ['@CraftCycle'] = xPlayer.job.name
         })
 
         TriggerClientEvent('esx:showNotification', xPlayer.source, _U("skill_new", _U(player_skills[name].name)))
@@ -86,6 +92,7 @@ function get_skill(xPlayer, name)
 end
 
 function format_skill(skill)
+    -- TODO: Must validate job + skill
     if not Config.Jobs[skill.craft_cycle] then
         return nil
     end
@@ -126,10 +133,10 @@ function remove_skill(xPlayer, skill)
 end
 
 function set_skill_tries(xPlayer, skill, tries, show_message)
-    if tries <= 0 then 
+    if tries <= 0 then
         remove_skill(xPlayer, skill)
 
-        if show_message == true then 
+        if show_message == true then
             TriggerClientEvent('esx:showNotification', xPlayer.source, _U("skill_removed", _U(skill.name)))
         end
     else
@@ -142,7 +149,7 @@ function set_skill_tries(xPlayer, skill, tries, show_message)
 
         commit_skills(xPlayer)
 
-        if show_message == true then 
+        if show_message == true then
             TriggerClientEvent('esx:showNotification', xPlayer.source, _U("skill_modified", _U(skill.name), level))
         end
     end
@@ -155,7 +162,7 @@ function increase_skill(xPlayer, skill)
         set_skill_tries(xPlayer, skill, skill.tries + 1)
 
         local skills_stats = get_skills_stats(xPlayer)
-        if skills_stats.sum > Config.GlobalSkillLimit then 
+        if skills_stats.sum > Config.GlobalSkillLimit then
             decrease_random_skill(xPlayer, skill)
         end
 
@@ -178,7 +185,7 @@ function decrease_random_skill(xPlayer, not_skill)
             counter = 1
 
             for name, loop_skill in pairs(player_skills) do
-                if index == counter then 
+                if index == counter then
                     skill = loop_skill
                     break
                 end
@@ -206,7 +213,7 @@ function execute_skill(xPlayer, skill)
         xPlayer.addInventoryItem(skill.name, math.floor(roll_qty/25)+1)
     end
 
-    if Config.PlayAnimation then 
+    if Config.PlayAnimation then
         TriggerClientEvent("esx_jobs_skill:anim", xPlayer.source, mood)
     end
 end
@@ -224,6 +231,88 @@ ESX.RegisterServerCallback('esx_jobs_skill:removeSkill', function(source, cb, sk
     remove_skill(xPlayer, skill)
 
     cb()
+end)
+
+ESX.RegisterServerCallback('esx_jobs_skill:vendorSell', function(source, cb, craft_cycle, qty)
+    local xPlayer = ESX.GetPlayerFromId(source)
+    local craft_cycle = Config.Jobs[xPlayer.job.name].craft_cycles[craft_cycle.db_name]
+    --TODO: Valider la position du joueur sur le pointer si pas sur le pointer ne pas effectuer et donner un message
+
+    local transaction_status = 'success'
+    local transaction_status_message = ''
+    local transaction_quantity = qty
+
+    local inventoryItem = xPlayer.getInventoryItem(craft_cycle.db_name)
+    local inventory_count = inventoryItem and xPlayer.getInventoryItem(craft_cycle.db_name).count or 0
+
+    if inventory_count >= craft_cycle.max then
+        transaction_status = 'fail'
+        transaction_quantity = 0
+        transaction_status_message = 'vendor_too_many_items_in_inventory'
+    elseif inventory_count + qty > craft_cycle.max then
+        transaction_quantity = craft_cycle.max - inventory_count
+    end
+
+    if transaction_quantity > 0 then
+        local transaction_total = craft_cycle.vendor.price_sell * transaction_quantity
+
+        if xPlayer.getMoney() >= craft_cycle.vendor.price_sell then
+            if xPlayer.getMoney() < transaction_total then
+                transaction_quantity = math.floor(xPlayer.getMoney()/craft_cycle.vendor.price_sell)
+                transaction_total = craft_cycle.vendor.price_sell * transaction_quantity
+            end
+            xPlayer.removeMoney(transaction_total)
+            xPlayer.addInventoryItem(craft_cycle.db_name, transaction_quantity)
+        else
+            transaction_status = 'fail'
+            transaction_quantity = 0
+            transaction_status_message = 'vendor_no_money'
+        end
+    end
+
+    cb({
+        transaction = {
+            status = transaction_status,
+            message = transaction_status_message,
+            quantity = transaction_quantity,
+            total = transaction_total
+        }
+    })
+end)
+
+ESX.RegisterServerCallback('esx_jobs_skill:vendorBuy', function(source, cb, craft_cycle, qty)
+    local xPlayer = ESX.GetPlayerFromId(source)
+    local craft_cycle = Config.Jobs[xPlayer.job.name].craft_cycles[craft_cycle.db_name]
+    --TODO: Valider la position du joueur sur le pointer si pas sur le pointer ne pas effectuer et donner un message
+
+    local transaction_status = 'success'
+    local transaction_status_message = ''
+    local transaction_quantity = qty
+
+    local inventory_count = xPlayer.getInventoryItem(craft_cycle.db_name).count
+
+    if inventory_count == 0 then
+        transaction_status = 'fail'
+        transaction_quantity = 0
+        transaction_status_message = 'vendor_no_item_in_inventory'
+    elseif inventory_count < transaction_quantity then
+        transaction_quantity = inventory_count
+    end
+
+    if transaction_quantity > 0 then
+        transaction_total = craft_cycle.vendor.price_buy * transaction_quantity
+        xPlayer.removeInventoryItem(craft_cycle.db_name, transaction_quantity)
+        xPlayer.addMoney(transaction_total)
+    end
+
+    cb({
+        transaction = {
+            status = transaction_status,
+            message = transaction_status_message,
+            quantity = transaction_quantity,
+            total = transaction_total
+        }
+    })
 end)
 
 TriggerEvent('esx_jobs:registerHook', "overrides", "add_item", function (params)

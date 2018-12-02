@@ -12,16 +12,16 @@ function transform_job_2_esx_jobs(jobs)
 
         trans_job.Zones = {}
 
-        for craft_cycle, values in pairs(job_data.craft_cycles) do
-            trans_job.Zones[craft_cycle] = values.position
-            trans_job.Zones[craft_cycle].Item = {}
+        for step, values in pairs(job_data.steps) do
+            trans_job.Zones[step] = values.position
+            trans_job.Zones[step].Item = {}
 
-            table.insert(trans_job.Zones[craft_cycle].Item, values)
+            table.insert(trans_job.Zones[step].Item, values)
 
-            trans_job.Zones[craft_cycle].Item[1].position = nil
+            trans_job.Zones[step].Item[1].position = nil
 
-            if craft_cycle == name then
-                --trans_job.Delivery =  trans_job.Zones[craft_cycle].Item[1].vendor
+            if step == name then
+                --trans_job.Delivery =  trans_job.Zones[step].Item[1].vendor
 
                 trans_job.Delivery.Item.requires = job_data.db_name
                 trans_job.Delivery.Item.requires_name = job_data.name

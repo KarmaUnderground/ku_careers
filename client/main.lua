@@ -40,17 +40,19 @@ function ShowSkills()
         local skills_rows = {}
         local skills_sum = 0
 
-        for name, skill in pairs(skills) do
-            table.insert(skills_rows, {
-                data = name,
-                cols = {
-                    _U(skill.craft_cycle),
-                    _U(skill.name),
-                    skill.level,
-                    '{{' .. _U('forget_all') .. '|all}}'
-                }
-            })
-            skills_sum = skills_sum + tonumber(skill.level)
+        for job_name, jobs in pairs(skills) do
+            for skill_name, skill in pairs(jobs) do
+                table.insert(skills_rows, {
+                    data = name,
+                    cols = {
+                        _U(skill.job),
+                        _U(skill.name),
+                        skill.level,
+                        '{{' .. _U('forget_all') .. '|all}}'
+                    }
+                })
+                skills_sum = skills_sum + tonumber(skill.level)
+            end
         end
 
         table.insert(skills_rows, {
@@ -87,23 +89,23 @@ function ForgetSkill(skill)
     ESX.TriggerServerCallback("esx_jobs_skill:removeSkill", function()end, skill)
 end
 
-function showVendorMenu(craft_cycle)
+function showVendorMenu(step)
     -- Utiliser un menu graphique cool
     ESX.UI.Menu.CloseAll()
     ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'ku_jobs_skills_vendor_menu',
     {
-        title    = _U("vendor_menu_title", _U(craft_cycle.db_name)),
+        title    = _U("vendor_menu_title", _U(step.db_name)),
         align    = 'center',
         elements = {
-            { label = _U("vendor_menu_action_sell", _U(craft_cycle.db_name), _U('$_before'), craft_cycle.vendor.price_buy, _U('$_after'), _U(craft_cycle.unit)), value = "sell" },
-            { label = _U("vendor_menu_action_buy", _U(craft_cycle.db_name), _U('$_before'), craft_cycle.vendor.price_sell, _U('$_after'), _U(craft_cycle.unit)), value = "buy" },
+            { label = _U("vendor_menu_action_sell", _U(step.db_name), _U('$_before'), step.vendor.price_buy, _U('$_after'), _U(step.unit)), value = "sell" },
+            { label = _U("vendor_menu_action_buy", _U(step.db_name), _U('$_before'), step.vendor.price_sell, _U('$_after'), _U(step.unit)), value = "buy" },
             { label = _U("cancel"), value = "cancel" }
         }
     },
     function(data, menu)
         menu.close()
         if not (data.current.value == "cancel") then
-            showVendorMenuQuantity(craft_cycle, data.current.value)
+            showVendorMenuQuantity(step, data.current.value)
         end
     end,
     function(data, menu)
@@ -111,18 +113,18 @@ function showVendorMenu(craft_cycle)
     end)
 end
 
-function showVendorMenuQuantity(craft_cycle, type)
+function showVendorMenuQuantity(step, type)
     ESX.UI.Menu.CloseAll()
     ESX.UI.Menu.Open('dialog', GetCurrentResourceName(), 'ku_jobs_skills_vendor_menu_qty',
     {
-        title = _U('vendor_menu_qty_question', _U(craft_cycle.unit),  _U(craft_cycle.db_name), string.lower(_U(type)))
+        title = _U('vendor_menu_qty_question', _U(step.unit),  _U(step.db_name), string.lower(_U(type)))
     },
     function(data, menu)
         menu.close()
         if type == "buy" then
-            vendorSell(craft_cycle, data.value)
+            vendorSell(step, data.value)
         elseif type == "sell" then
-            vendorBuy(craft_cycle, data.value)
+            vendorBuy(step, data.value)
         end
     end,
     function(data, menu)
@@ -130,14 +132,24 @@ function showVendorMenuQuantity(craft_cycle, type)
     end)
 end
 
-function vendorBuy(craft_cycle, qty)
+function vendorBuy(step, qty)
     ESX.TriggerServerCallback("esx_jobs_skill:vendorBuy", function(response)
         if response.transaction.status == "success" then
-            ESX.ShowNotification(_U('vendor_transaction_sell_success', response.transaction.quantity, string.lower(_U(craft_cycle.unit)), string.lower(_U(craft_cycle.db_name))))
+            ESX.ShowNotification(_U('vendor_transaction_sell_success', response.transaction.quantity, string.lower(_U(step.unit)), string.lower(_U(step.db_name))))
         else
-            ESX.ShowNotification(_U(response.transaction.message, string.lower(_U(craft_cycle.db_name))))
+            ESX.ShowNotification(_U(response.transaction.message, string.lower(_U(step.db_name))))
         end
-    end, craft_cycle, qty)
+    end, step.db_name, qty)
+end
+
+function vendorSell(step, qty)
+    ESX.TriggerServerCallback("esx_jobs_skill:vendorSell", function(response)
+        if response.transaction.status == "success" then
+            ESX.ShowNotification(_U('vendor_transaction_buy_success', response.transaction.quantity, string.lower(_U(step.unit)), string.lower(_U(step.db_name))))
+        else
+            ESX.ShowNotification(_U(response.transaction.message, step.max, string.lower(_U(step.unit)), string.lower(_U(step.db_name))))
+        end
+    end, step.db_name, qty)
 end
 
 function canSeeMarker(marker)
@@ -146,16 +158,6 @@ end
 
 function isInMarker(marker)
     return GetDistanceBetweenCoords(GetEntityCoords(PlayerPedId()), marker.Pos.x, marker.Pos.y, marker.Pos.z, true) < marker.Size.x / 2
-end
-
-function vendorSell(craft_cycle, qty)
-    ESX.TriggerServerCallback("esx_jobs_skill:vendorSell", function(response)
-        if response.transaction.status == "success" then
-            ESX.ShowNotification(_U('vendor_transaction_buy_success', response.transaction.quantity, string.lower(_U(craft_cycle.unit)), string.lower(_U(craft_cycle.db_name))))
-        else
-            ESX.ShowNotification(_U(response.transaction.message, craft_cycle.max, string.lower(_U(craft_cycle.unit)), string.lower(_U(craft_cycle.db_name))))
-        end
-    end, craft_cycle, qty)
 end
 
 RegisterNetEvent('esx_jobs_skill:anim')
@@ -174,16 +176,16 @@ Citizen.CreateThread(function() -- Display vendor circles
         Citizen.Wait(1)
 
         if xPlayer then
-            for name, craft_cycle in pairs(Config.Jobs[xPlayer.job.name].craft_cycles) do
-                if craft_cycle.vendor then
-                    if(craft_cycle.vendor.Marker ~= -1 and canSeeMarker(craft_cycle.vendor)) then
-                        DrawMarker(craft_cycle.vendor.Marker, craft_cycle.vendor.Pos.x, craft_cycle.vendor.Pos.y, craft_cycle.vendor.Pos.z, 0.0, 0.0, 0.0, 0, 0.0, 0.0, craft_cycle.vendor.Size.x, craft_cycle.vendor.Size.y, craft_cycle.vendor.Size.z, craft_cycle.vendor.Color.r, craft_cycle.vendor.Color.g, craft_cycle.vendor.Color.b, 100, false, true, 2, false, false, false, false)
-                        in_the_zone = isInMarker(craft_cycle.vendor)
+            for name, step in pairs(Config.Jobs[xPlayer.job.name].steps) do
+                if step.vendor then
+                    if(step.vendor.Marker ~= -1 and canSeeMarker(step.vendor)) then
+                        DrawMarker(step.vendor.Marker, step.vendor.Pos.x, step.vendor.Pos.y, step.vendor.Pos.z, 0.0, 0.0, 0.0, 0, 0.0, 0.0, step.vendor.Size.x, step.vendor.Size.y, step.vendor.Size.z, step.vendor.Color.r, step.vendor.Color.g, step.vendor.Color.b, 100, false, true, 2, false, false, false, false)
+                        in_the_zone = isInMarker(step.vendor)
                         if(in_the_zone and not get_in_the_zone) then
                             get_in_the_zone = true
 
-                            inCraftCycle = craft_cycle
-                            hintMessage = _U(craft_cycle.db_name .. "_hint")
+                            inCraftCycle = step
+                            hintMessage = _U(step.db_name .. "_hint")
                         elseif(not in_the_zone and get_in_the_zone) then
                             get_in_the_zone = false
 

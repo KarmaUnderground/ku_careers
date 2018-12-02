@@ -1,5 +1,5 @@
 Config.Jobs.gas = {}
-Config.Jobs.gas.craft_cycles = {
+Config.Jobs.gas.steps = {
     oil = {
         name = _U("oil_name"),
         db_name = "oil",
@@ -21,7 +21,7 @@ Config.Jobs.gas.craft_cycles = {
             Blip = true,
             Name = _U("oil_action_name"),
             Type = "work",
-            Hint = _U("f_drillbutton"), -- Changer
+            Hint = _U("oil_hint"), -- Changer
             GPS = {x = 2736.94, y = 1417.99, z = 23.48}
         },
         vendor = {

@@ -18,6 +18,14 @@ function commit_skills(xPlayer)
     end
 end
 
+function get_job_step(skill)
+    if not Config.Jobs[skill.job] or not Config.Jobs[skill.job].steps[skill.name] then
+        return nil
+    end
+
+    return Config.Jobs[skill.job].steps[skill.name]
+end
+
 function get_skills(xPlayer)
     local player_skills = xPlayer.get('skills')
     local formated_skill = nil
@@ -93,22 +101,22 @@ function get_skill(xPlayer, job, name)
 end
 
 function format_skill(job, name, tries)
-    if not Config.Jobs[job] or not Config.Jobs[job].steps[name] then
-        return nil
+    if get_job_step({job = job, name = name}) then
+        local formatted_skill = get_level_from_tries({
+            job = job,
+            name = name,
+            tries = tries,
+            level = 0
+        })
+
+        return formatted_skill
     end
 
-    local formatted_skill = get_level_from_tries({
-        job = job,
-        name = name,
-        tries = tries,
-        level = 0
-    })
-
-    return formatted_skill
+    return nil
 end
 
 function get_level_from_tries(skill)
-    local skill_rate = Config.Jobs[skill.job].steps[skill.name].skill_rate
+    local skill_rate = get_job_step(skill).skill_rate
 
     skill.level = math.sqrt((skill_rate*skill_rate) - ((skill_rate - skill.tries) * (skill_rate - skill.tries)))
     skill.level = ESX.Round(((skill.level/skill_rate)*100),1)
@@ -199,7 +207,7 @@ function decrease_random_skill(xPlayer, not_skill)
 end
 
 function execute_skill(xPlayer, skill)
-    local step = Config.Jobs[skill.job].steps[skill.name]
+        local step = get_job_step(skill)
 
     local mood = "bad"
     local diff = 12.5
@@ -214,7 +222,8 @@ function execute_skill(xPlayer, skill)
 
         local roll_qty = rand_normal(skill.level - diff, skill.level + diff, variace, 0.1, 100)
 
---        local multiplyer = Config.jobs[skill.job].steps[skill.name].add
+
+        --local multiplyer = get_job_step(skill).add
         local multiplyer = 1
 
         add = (math.floor(roll_qty/25)+1)*multiplyer
@@ -229,7 +238,7 @@ end
 
 ESX.RegisterServerCallback('esx_jobs_skill:vendorSell', function(source, cb, step, qty)
     local xPlayer = ESX.GetPlayerFromId(source)
-    local step = Config.Jobs[xPlayer.job.name].steps[step]
+    local step = get_job_step({job = xPlayer.job.name, name = step})
     --TODO: KU-22
 
     local transaction_status = 'success'
@@ -276,7 +285,7 @@ end)
 
 ESX.RegisterServerCallback('esx_jobs_skill:vendorBuy', function(source, cb, step, qty)
     local xPlayer = ESX.GetPlayerFromId(source)
-    local step = Config.Jobs[xPlayer.job.name].steps[step]
+    local step = get_job_step({job = xPlayer.job.name, name = step})
     --TODO: KU-22
 
     local transaction_status = 'success'

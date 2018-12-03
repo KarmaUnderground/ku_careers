@@ -190,7 +190,7 @@ function formatMoney(amount)
 end
 
 function canSeeMarker(marker)
-    return GetDistanceBetweenCoords(GetEntityCoords(PlayerPedId()), marker.Pos.x, marker.Pos.y, marker.Pos.z, true) < 100
+    return GetDistanceBetweenCoords(GetEntityCoords(PlayerPedId()), marker.Pos.x, marker.Pos.y, marker.Pos.z, true) < Config.ViewMarkerDistance
 end
 
 function isInMarker(marker)

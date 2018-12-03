@@ -26,8 +26,8 @@ Locales['fr'] = {
     ['forget_part']    = 'Oublier une partie',
 
     ['vendor_menu_title'] = 'Menu du commercant: %s',
-    ['vendor_menu_action_buy'] = 'Acheter %s: %s%s%s/%s',
-    ['vendor_menu_action_sell'] = 'Vendre %s: %s%s%s/%s',
+    ['vendor_menu_action_buy'] = 'Acheter %s: %s%s%s/%s (max: %s)',
+    ['vendor_menu_action_sell'] = 'Vendre %s: %s%s%s/%s (max: %s)',
 
     ['vendor_menu_qty_title'] = 'Quantité',
     ['vendor_menu_qty_question'] = 'Combien de %s de %s voulez-vous %s?',

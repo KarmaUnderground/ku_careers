@@ -90,27 +90,36 @@ function ForgetSkill(skill)
 end
 
 function showVendorMenu(step)
-    -- Utiliser un menu graphique cool
-    ESX.UI.Menu.CloseAll()
-    ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'ku_jobs_skills_vendor_menu',
-    {
-        title    = _U("vendor_menu_title", _U(step.db_name)),
-        align    = 'center',
-        elements = {
-            { label = _U("vendor_menu_action_sell", _U(step.db_name), _U('$_before'), step.vendor.price_buy, _U('$_after'), _U(step.unit)), value = "sell" },
-            { label = _U("vendor_menu_action_buy", _U(step.db_name), _U('$_before'), step.vendor.price_sell, _U('$_after'), _U(step.unit)), value = "buy" },
-            { label = _U("cancel"), value = "cancel" }
-        }
-    },
-    function(data, menu)
-        menu.close()
-        if not (data.current.value == "cancel") then
-            showVendorMenuQuantity(step, data.current.value)
+    ESX.TriggerServerCallback('esx_jobs_skill:getInventoryItem', function(inventoryItem)
+        local elements = {}
+
+        if inventoryItem.count > 0 then
+            table.insert(elements, { label = _U("vendor_menu_action_sell", _U(step.db_name), _U('$_before'), step.vendor.price_buy, _U('$_after'), _U(step.unit), inventoryItem.count), value = "sell" })
         end
-    end,
-    function(data, menu)
-        menu.close()
-    end)
+
+        if inventoryItem.count < step.max then
+            table.insert(elements, { label = _U("vendor_menu_action_buy", _U(step.db_name), _U('$_before'), step.vendor.price_sell, _U('$_after'), _U(step.unit), step.max - inventoryItem.count), value = "buy" })
+        end
+
+        table.insert(elements, { label = _U("cancel"), value = "cancel" })
+
+        ESX.UI.Menu.CloseAll()
+        ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'ku_jobs_skills_vendor_menu',
+        {
+            title    = _U("vendor_menu_title", _U(step.db_name)),
+            align    = 'center',
+            elements = elements
+        },
+        function(data, menu)
+            menu.close()
+            if not (data.current.value == "cancel") then
+                showVendorMenuQuantity(step, data.current.value)
+            end
+        end,
+        function(data, menu)
+            menu.close()
+        end)
+    end, step.db_name)
 end
 
 function showVendorMenuQuantity(step, type)

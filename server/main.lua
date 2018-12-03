@@ -343,4 +343,9 @@ ESX.RegisterServerCallback('esx_jobs_skill:removeSkill', function(source, cb, sk
     cb()
 end)
 
+ESX.RegisterServerCallback('esx_jobs_skill:getInventoryItem', function(source, cb, name)
+    local xPlayer = ESX.GetPlayerFromId(source)
+    cb(xPlayer.getInventoryItem(name))
+end)
+
 TriggerEvent('esx_jobs:registerExternalJobs', transform_job_2_esx_jobs(Config.Jobs))

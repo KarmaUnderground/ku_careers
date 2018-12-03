@@ -11,3 +11,4 @@ Config.GlobalSkillLimit = 500
 Config.AllowSkillModificaton = true
 
 Config.ViewMarkerDistance = 200
+Config.VehicleWorkingDistance = 5

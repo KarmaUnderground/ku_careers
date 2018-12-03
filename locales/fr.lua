@@ -8,6 +8,8 @@ Locales['fr'] = {
 
     ['quantity'] = 'Quantité',
 
+    ['working_vehicle_too_far'] = 'Votre véhicule de travail est trop loin pour exécuter cette action',
+
     ['skill_up']       = 'Vous avez appris quelque chose. Votre niveau ~y~%s~s~ est: ~y~%s~s~',
     ['skill_down']       = 'Vous avez oublié quelque chose. Votre niveau ~y~%s~s~ est: ~y~%s~s~',
     ['skill_removed']  = 'Votre avez complètement oublié ~y~%s~s~',

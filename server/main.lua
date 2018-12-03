@@ -207,7 +207,7 @@ function decrease_random_skill(xPlayer, not_skill)
 end
 
 function execute_skill(xPlayer, skill)
-        local step = get_job_step(skill)
+    local step = get_job_step(skill)
 
     local mood = "bad"
     local diff = 12.5
@@ -236,10 +236,41 @@ function execute_skill(xPlayer, skill)
     end
 end
 
+--******************************************************************
+-- Working vehicle management
+--******************************************************************
+local isVehicleInArea = {}
+RegisterServerEvent('esx_jobs_skills:areaVehiclesResponse')
+AddEventHandler('esx_jobs_skills:areaVehiclesResponse', function(response)
+    isVehicleInArea[ESX.GetPlayerFromId(source).identifier] = response
+end)
+
+function isVehicleCloseEnough(xPlayer, step)
+    TriggerClientEvent('esx_jobs_skill:getVehicleInArea', xPlayer.source, step.vehicle, 'esx_jobs_skills:areaVehiclesResponse')
+
+    while isVehicleInArea[xPlayer.identifier] == nil do
+        Citizen.Wait(1)
+    end
+    local reponse = isVehicleInArea[xPlayer.identifier]
+    isVehicleInArea[xPlayer.identifier] = nil
+
+    return reponse
+end
+
+--******************************************************************
+-- Vendor actions
+--******************************************************************
+
+-- Vendor sell action
 ESX.RegisterServerCallback('esx_jobs_skill:vendorSell', function(source, cb, step, qty)
     local xPlayer = ESX.GetPlayerFromId(source)
     local step = get_job_step({job = xPlayer.job.name, name = step})
     --TODO: KU-22
+
+    if not isVehicleCloseEnough(xPlayer, step) then
+        TriggerClientEvent('esx:showNotification', xPlayer.source, _U("working_vehicle_too_far"))
+        return false
+    end
 
     local transaction_status = 'success'
     local transaction_status_message = ''
@@ -283,10 +314,16 @@ ESX.RegisterServerCallback('esx_jobs_skill:vendorSell', function(source, cb, ste
     })
 end)
 
+-- Vendor buy action
 ESX.RegisterServerCallback('esx_jobs_skill:vendorBuy', function(source, cb, step, qty)
     local xPlayer = ESX.GetPlayerFromId(source)
     local step = get_job_step({job = xPlayer.job.name, name = step})
     --TODO: KU-22
+
+    if not isVehicleCloseEnough(xPlayer, step) then
+        TriggerClientEvent('esx:showNotification', xPlayer.source, _U("working_vehicle_too_far"))
+        return false
+    end
 
     local transaction_status = 'success'
     local transaction_status_message = ''
@@ -318,28 +355,18 @@ ESX.RegisterServerCallback('esx_jobs_skill:vendorBuy', function(source, cb, step
     })
 end)
 
+--******************************************************************
+-- Skill management server callbacks
+--******************************************************************
 ESX.RegisterServerCallback('esx_jobs_skill:getSkills', function(source, cb)
     local xPlayer = ESX.GetPlayerFromId(source)
     local skills = get_skills(xPlayer)
-
     cb(skills)
-end)
-
-TriggerEvent('esx_jobs:registerHook', "overrides", "add_item", "ku_jobs_skills_execute_skill", function (params)
-    local xPlayer = params.xPlayer
-    local item = params.item
-
-    local skill = get_skill(xPlayer, xPlayer.job.name, item.db_name)
-
-    execute_skill(xPlayer, skill)
-    increase_skill(xPlayer, skill)
 end)
 
 ESX.RegisterServerCallback('esx_jobs_skill:removeSkill', function(source, cb, skill)
     local xPlayer = ESX.GetPlayerFromId(source)
-
     remove_skill(xPlayer, skill)
-
     cb()
 end)
 
@@ -348,4 +375,24 @@ ESX.RegisterServerCallback('esx_jobs_skill:getInventoryItem', function(source, c
     cb(xPlayer.getInventoryItem(name))
 end)
 
+--******************************************************************
+-- Execute working actions
+--******************************************************************
+TriggerEvent('esx_jobs:registerHook', "overrides", "add_item", "ku_jobs_skills_execute_skill", function (params)
+    local xPlayer = params.xPlayer
+    local skill = get_skill(xPlayer, xPlayer.job.name, params.item.db_name)
+    local step = get_job_step(skill)
+
+    if not isVehicleCloseEnough(xPlayer, step) then
+        TriggerClientEvent('esx:showNotification', xPlayer.source, _U("working_vehicle_too_far"))
+        return false
+    end
+
+    execute_skill(xPlayer, skill)
+    increase_skill(xPlayer, skill)
+end)
+
+--******************************************************************
+-- Register external jobs
+--******************************************************************
 TriggerEvent('esx_jobs:registerExternalJobs', transform_job_2_esx_jobs(Config.Jobs))

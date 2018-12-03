@@ -206,6 +206,21 @@ AddEventHandler('esx_jobs_skill:anim', function(mood)
     end
 end)
 
+RegisterNetEvent('esx_jobs_skill:getVehicleInArea')
+AddEventHandler('esx_jobs_skill:getVehicleInArea', function(model, cb)
+    local vehicles = ESX.Game.GetVehiclesInArea(GetEntityCoords(PlayerPedId()), Config.VehicleWorkingDistance)
+    local response = false
+
+    for index, vehicle in pairs(vehicles) do
+        if IsVehicleModel(vehicle, 'phantom') then
+            response = true
+            break
+        end
+    end
+
+    TriggerServerEvent(cb, response)
+end)
+
 local in_the_zone = false
 local get_in_the_zone = false
 Citizen.CreateThread(function() -- Display vendor circles

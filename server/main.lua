@@ -2,6 +2,14 @@ ESX = nil
 
 TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 
+function get_job_step(skill)
+    if not Config.Jobs[skill.job] or not Config.Jobs[skill.job].steps[skill.name] then
+        return nil
+    end
+
+    return Config.Jobs[skill.job].steps[skill.name]
+end
+
 function commit_skills(xPlayer)
     local player_skills = get_skills(xPlayer)
 
@@ -16,14 +24,6 @@ function commit_skills(xPlayer)
             })
         end
     end
-end
-
-function get_job_step(skill)
-    if not Config.Jobs[skill.job] or not Config.Jobs[skill.job].steps[skill.name] then
-        return nil
-    end
-
-    return Config.Jobs[skill.job].steps[skill.name]
 end
 
 function get_skills(xPlayer)
@@ -208,23 +208,17 @@ end
 
 function execute_skill(xPlayer, skill)
     local step = get_job_step(skill)
-
     local mood = "bad"
     local diff = 12.5
     local variace = 0.8
-
     local add = 0
-
     local roll_skill = math.random(1000) / 10
 
     if skill.level > roll_skill then
         mood = "good"
 
         local roll_qty = rand_normal(skill.level - diff, skill.level + diff, variace, 0.1, 100)
-
-
-        --local multiplyer = get_job_step(skill).add
-        local multiplyer = 1
+        local multiplyer = 1 --local multiplyer = get_job_step(skill).add
 
         add = (math.floor(roll_qty/25)+1)*multiplyer
     end
@@ -260,7 +254,6 @@ end
 --******************************************************************
 -- Vendor actions
 --******************************************************************
-
 -- Vendor sell action
 ESX.RegisterServerCallback('esx_jobs_skill:vendorSell', function(source, cb, step, qty)
     local xPlayer = ESX.GetPlayerFromId(source)
@@ -378,9 +371,7 @@ end)
 --******************************************************************
 -- Execute working actions
 --******************************************************************
-TriggerEvent('esx_jobs:registerHook', "overrides", "add_item", "ku_jobs_skills_execute_skill", function (params)
-    local xPlayer = params.xPlayer
-    local skill = get_skill(xPlayer, xPlayer.job.name, params.item.db_name)
+function start_working(xPlayer, skill)
     local step = get_job_step(skill)
 
     if not isVehicleCloseEnough(xPlayer, step) then
@@ -390,6 +381,13 @@ TriggerEvent('esx_jobs:registerHook', "overrides", "add_item", "ku_jobs_skills_e
 
     execute_skill(xPlayer, skill)
     increase_skill(xPlayer, skill)
+end
+
+TriggerEvent('esx_jobs:registerHook', "overrides", "add_item", "ku_jobs_skills_execute_skill", function (params)
+    local xPlayer = params.xPlayer
+    local skill = get_skill(xPlayer, xPlayer.job.name, params.item.db_name)
+
+    function start_working(xPlayer, skill)
 end)
 
 --******************************************************************

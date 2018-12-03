@@ -142,6 +142,11 @@ function showVendorMenuQuantity(step, type)
 end
 
 function vendorBuy(step, qty)
+    if not tonumber(qty) then
+        ESX.ShowNotification("This is not a number")
+        return false
+    end
+
     ESX.TriggerServerCallback("esx_jobs_skill:vendorBuy", function(response)
         if response.transaction.status == "success" then
             ESX.ShowNotification(
@@ -159,6 +164,11 @@ function vendorBuy(step, qty)
 end
 
 function vendorSell(step, qty)
+    if not tonumber(qty) then
+        ESX.ShowNotification("This is not a number")
+        return false
+    end
+
     ESX.TriggerServerCallback("esx_jobs_skill:vendorSell", function(response)
         if response.transaction.status == "success" then
             ESX.ShowNotification(

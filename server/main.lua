@@ -2,31 +2,76 @@ ESX = nil
 
 TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 
-function get_job_step(skill)
-    if not Config.Jobs[skill.job] or not Config.Jobs[skill.job].steps[skill.name] then
+function get_industry_step(skill)
+    if not Config.Jobs[skill.industry] or not Config.Jobs[skill.industry].steps[skill.name] then
         return nil
     end
 
-    return Config.Jobs[skill.job].steps[skill.name]
+    return Config.Jobs[skill.industry].steps[skill.name]
+end
+
+function get_skill(industry, name)
+    local skill = MySQL.Sync.fetchAll('SELECT `id`, `name`, `industry`, `skill_rate`, `work_type` FROM `skills` WHERE `name` = @Name AND industry = @Industry', {
+        ['@Name'] = name,
+        ['@Industry'] = industry
+    })
+
+    return skill[1]
+end
+
+function get_hyerarchy(industry)
+    --[[
+    local players = MySQL.Sync.fetchAll('SELECT `industry`, `name`, `tries` FROM `user_skills` WHERE `identifier` = @Identifier ORDER BY `industry`', {
+        ['@Identifier'] = xPlayer.identifier
+    })
+
+    local ordered = {}
+
+    local factor = 0
+    local level = 1
+
+    for i=1, #players, 1 do
+        factor = math.pow(2, level-1)
+
+        ordered[players[i].id].childs = {}
+
+        if level == 1 then
+            ordered[players[i].id].parent = nil
+        else
+            ordered[players[i].id].parent = players[(factor/2)+math.mod(i,factor/2)]
+        end
+
+        if players[factor] then
+            table.insert(ordered[players[i].id].childs, players[factor].id)
+        end
+
+        if players[factor*2] then
+            table.insert(ordered[players[i].id].childs, players[factor*2].id)
+        end
+
+        level = level+1
+    end
+    ]]
 end
 
 function commit_skills(xPlayer)
-    local player_skills = get_skills(xPlayer)
+    local player_skills = get_user_skills(xPlayer)
 
-    for job_name, jobs in pairs(player_skills) do
-        for skill_name, skill in pairs(jobs) do
-            MySQL.Async.execute('UPDATE `user_skills` SET `tries` = @tries WHERE `identifier` = @Identifier AND `job` = @Job AND `name` = @Name',
-            {
-                ['@Identifier'] = xPlayer.identifier,
-                ['@Job']        = skill.job,
-                ['@Name']       = skill.name,
-                ['@tries']      = skill.tries,
-            })
+    for industry_name, industries in pairs(player_skills) do
+        for skill_name, skill in pairs(industries) do
+            if skill.used then
+                MySQL.Async.execute('UPDATE `user_skills` SET `tries` = @tries, `last_usage` = NOW() WHERE `identifier` = @Identifier AND `skill_id` = @Skill_id',
+                {
+                    ['@tries'] = skill.tries,
+                    ['@Identifier'] = xPlayer.identifier,
+                    ['@Skill_id']   = skill.id
+                })
+            end
         end
     end
 end
 
-function get_skills(xPlayer)
+function get_user_skills(xPlayer)
     local player_skills = xPlayer.get('skills')
     local formated_skill = nil
 
@@ -35,19 +80,29 @@ function get_skills(xPlayer)
 
         player_skills = {}
 
-        local result = MySQL.Sync.fetchAll('SELECT `job`, `name`, `tries` FROM `user_skills` WHERE `identifier` = @Identifier ORDER BY `job`', {
+        local result = MySQL.Sync.fetchAll('SELECT `us`.`identifier`, `us`.`skill_id`, `s`.`name` AS skill_name, `s`.`industry` AS skill_industry, `s`.`work_type` AS skill_work_type, `s`.`skill_rate`, `us`.`tries`, ROUND((SQRT(POWER(`s`.`skill_rate`,2) - POWER(`s`.`skill_rate` - `us`.`tries`,2))/`s`.`skill_rate`)*100, 1) AS level FROM `user_skills` us INNER JOIN `skills` s ON `s`.`id` = `us`.`skill_id` WHERE `us`.`identifier` = @Identifier ORDER BY `s`.`industry`;',
+        {
             ['@Identifier'] = xPlayer.identifier
         })
 
         for i=1, #result, 1 do
-            skill = format_skill(result[i].job, result[i].name, result[i].tries)
+            skill = {
+                id = result[i]['skill_id'],
+                name = result[i]['skill_name'],
+                industry = result[i]['skill_industry'],
+                work_type = result[i]['skill_work_type'],
+                skill_rate = result[i]['skill_rate'],
+                tries = result[i]['tries'],
+                level = result[i]['level'],
+                used = false
+            }
 
             if skill then
-                if not player_skills[skill.job] then
-                    player_skills[skill.job] = {}
+                if not player_skills[skill.industry] then
+                    player_skills[skill.industry] = {}
                 end
 
-                player_skills[skill.job][skill.name] = skill
+                player_skills[skill.industry][skill.name] = skill
             end
         end
 
@@ -57,13 +112,13 @@ function get_skills(xPlayer)
     return player_skills
 end
 
-function get_skills_stats(xPlayer)
-    local player_skills = get_skills(xPlayer)
+function get_user_skills_stats(xPlayer)
+    local player_skills = get_user_skills(xPlayer)
     local skills_sum = 0
     local skills_count = 0
 
-    for job_name, jobs in pairs(player_skills) do
-        for skill_name, skill in pairs(jobs) do
+    for industry_name, industries in pairs(player_skills) do
+        for skill_name, skill in pairs(industries) do
             skills_sum = skills_sum + tonumber(skill.level)
             skills_count = skills_count + 1
         end
@@ -72,38 +127,48 @@ function get_skills_stats(xPlayer)
     return {sum = skills_sum, count = skills_count}
 end
 
-function get_skill(xPlayer, job, name)
-    local player_skills = get_skills(xPlayer)
-    local skill = player_skills[job][name]
+function get_user_skill(xPlayer, industry, name)
+    local player_skills = get_user_skills(xPlayer)
+    local user_skill = player_skills[industry][name]
 
-    if not skill then -- This skill does not exists
-        local skill = format_skill(job, name, 0)
+    if not user_skill then -- This skill does not exists
+        local skill = get_skill(industry, name)
 
-        if not formated_skill then
+        if not skill then
             return nil
         end
 
-        player_skills[job][name] = skill
-        xPlayer.set('skills', player_skills)
-
-        MySQL.Async.execute('INSERT INTO `user_skills` (`identifier`, `job`, `name`, `tries`) VALUES (@Identifire, @Job, @Name, @Tries)',
+        MySQL.Sync.execute('INSERT INTO `user_skills` (`identifier`, `skill_id`, `tries`) VALUES (@Identifire, @Skill_id, @Tries)',
         {
             ['@Identifire'] = xPlayer.identifier,
-            ['@Job']        = job,
-            ['@Name']       = name,
+            ['@Skill_id']   = skill.id,
             ['@Tries']      = 0
         })
+
+        user_skill =  {
+            id = skill.id,
+            name = skill.name,
+            industry = skill.industry,
+            work_type = skill.work_type,
+            skill_rate = skill.skill_rate,
+            tries = 0,
+            level = 0,
+            used = false
+        }
+        
+        player_skills[industry][name] = user_skill
+        xPlayer.set('skills', player_skills)
 
         TriggerClientEvent('esx:showNotification', xPlayer.source, _U("skill_new", _U(name)))
     end
 
-    return skill
+    return user_skill
 end
 
-function format_skill(job, name, tries)
-    if get_job_step({job = job, name = name}) then
+function format_skill(industry, name, tries)
+    if get_industry_step({industry = industry, name = name}) then
         local formatted_skill = get_level_from_tries({
-            job = job,
+            industry = industry,
             name = name,
             tries = tries,
             level = 0
@@ -116,18 +181,18 @@ function format_skill(job, name, tries)
 end
 
 function get_level_from_tries(skill)
-    local skill_rate = get_job_step(skill).skill_rate
+    local skill_rate = get_industry_step(skill).skill_rate
 
-    skill.level = math.sqrt((skill_rate*skill_rate) - ((skill_rate - skill.tries) * (skill_rate - skill.tries)))
-    skill.level = ESX.Round(((skill.level/skill_rate)*100),1)
+    skill.level = math.sqrt((skill.skill_rate*skill.skill_rate) - ((skill.skill_rate - skill.tries) * (skill.skill_rate - skill.tries)))
+    skill.level = ESX.Round(((skill.level/skill.skill_rate)*100),1)
 
     return skill
 end
 
 function remove_skill(xPlayer, skill)
-    local player_skills = get_skills(xPlayer)
+    local player_skills = get_user_skills(xPlayer)
 
-    player_skills[skill.job][skill.name] = nil
+    player_skills[skill.industry][skill.name] = nil
     xPlayer.set('skills', player_skills)
 
     MySQL.Async.execute('DELETE FROM `user_skills` WHERE `identifier` = @Identifire AND `name` = @Name',
@@ -143,7 +208,7 @@ function increase_skill(xPlayer, skill)
     if skill.level < roll then
         set_skill_tries(xPlayer, skill, skill.tries + 1)
 
-        local skills_stats = get_skills_stats(xPlayer)
+        local skills_stats = get_user_skills_stats(xPlayer)
         if skills_stats.sum > Config.GlobalSkillLimit then
             decrease_random_skill(xPlayer, skill)
         end
@@ -160,12 +225,13 @@ function set_skill_tries(xPlayer, skill, tries, show_message)
             TriggerClientEvent('esx:showNotification', xPlayer.source, _U("skill_removed", _U(skill.name)))
         end
     else
-        local player_skills = get_skills(xPlayer)
+        local player_skills = get_user_skills(xPlayer)
 
         skill.tries = tries
         skill = get_level_from_tries(skill)
+        skill.used = true
 
-        player_skills[skill.job][skill.name] = skill
+        player_skills[skill.industry][skill.name] = skill
 
         xPlayer.set('skills', player_skills)
 
@@ -178,8 +244,8 @@ function set_skill_tries(xPlayer, skill, tries, show_message)
 end
 
 function decrease_random_skill(xPlayer, not_skill)
-    local player_skills = get_skills(xPlayer)
-    local skills_stats = get_skills_stats(xPlayer)
+    local player_skills = get_user_skills(xPlayer)
+    local skills_stats = get_user_skills_stats(xPlayer)
 
     if skills_stats.count > 1 then
         local skill = not_skill
@@ -207,18 +273,19 @@ function decrease_random_skill(xPlayer, not_skill)
 end
 
 function execute_skill(xPlayer, skill)
-    local step = get_job_step(skill)
+    local step = get_industry_step(skill)
     local mood = "bad"
     local diff = 12.5
     local variace = 0.8
     local add = 0
+
     local roll_skill = math.random(1000) / 10
 
     if skill.level > roll_skill then
         mood = "good"
 
         local roll_qty = rand_normal(skill.level - diff, skill.level + diff, variace, 0.1, 100)
-        local multiplyer = 1 --local multiplyer = get_job_step(skill).add
+        local multiplyer = 1 --local multiplyer = get_industry_step(skill).add
 
         add = (math.floor(roll_qty/25)+1)*multiplyer
     end
@@ -226,7 +293,7 @@ function execute_skill(xPlayer, skill)
     xPlayer.addInventoryItem(skill.name, add)
 
     if Config.PlayAnimation then
-        TriggerClientEvent("esx_jobs_skill:anim", xPlayer.source, mood)
+        TriggerClientEvent("ku_skills:anim", xPlayer.source, mood)
     end
 end
 
@@ -234,13 +301,13 @@ end
 -- Working vehicle management
 --******************************************************************
 local isVehicleInArea = {}
-RegisterServerEvent('esx_jobs_skills:areaVehiclesResponse')
-AddEventHandler('esx_jobs_skills:areaVehiclesResponse', function(response)
+RegisterServerEvent('ku_skills:areaVehiclesResponse')
+AddEventHandler('ku_skills:areaVehiclesResponse', function(response)
     isVehicleInArea[ESX.GetPlayerFromId(source).identifier] = response
 end)
 
 function isVehicleCloseEnough(xPlayer, step)
-    TriggerClientEvent('esx_jobs_skill:getVehicleInArea', xPlayer.source, step.vehicle, 'esx_jobs_skills:areaVehiclesResponse')
+    TriggerClientEvent('ku_skills:getVehicleInArea', xPlayer.source, step.vehicle, 'ku_skills:areaVehiclesResponse')
 
     while isVehicleInArea[xPlayer.identifier] == nil do
         Citizen.Wait(1)
@@ -255,9 +322,9 @@ end
 -- Vendor actions
 --******************************************************************
 -- Vendor sell action
-ESX.RegisterServerCallback('esx_jobs_skill:vendorSell', function(source, cb, step, qty)
+ESX.RegisterServerCallback('ku_skills:vendorSell', function(source, cb, step, qty)
     local xPlayer = ESX.GetPlayerFromId(source)
-    local step = get_job_step({job = xPlayer.job.name, name = step})
+    local step = get_industry_step({industry = xPlayer.job.name, name = step})
     --TODO: KU-22
 
     if not isVehicleCloseEnough(xPlayer, step) then
@@ -308,9 +375,9 @@ ESX.RegisterServerCallback('esx_jobs_skill:vendorSell', function(source, cb, ste
 end)
 
 -- Vendor buy action
-ESX.RegisterServerCallback('esx_jobs_skill:vendorBuy', function(source, cb, step, qty)
+ESX.RegisterServerCallback('ku_skills:vendorBuy', function(source, cb, step, qty)
     local xPlayer = ESX.GetPlayerFromId(source)
-    local step = get_job_step({job = xPlayer.job.name, name = step})
+    local step = get_industry_step({industry = xPlayer.job.name, name = step})
     --TODO: KU-22
 
     if not isVehicleCloseEnough(xPlayer, step) then
@@ -351,19 +418,19 @@ end)
 --******************************************************************
 -- Skill management server callbacks
 --******************************************************************
-ESX.RegisterServerCallback('esx_jobs_skill:getSkills', function(source, cb)
+ESX.RegisterServerCallback('ku_skills:getSkills', function(source, cb)
     local xPlayer = ESX.GetPlayerFromId(source)
-    local skills = get_skills(xPlayer)
+    local skills = get_user_skills(xPlayer)
     cb(skills)
 end)
 
-ESX.RegisterServerCallback('esx_jobs_skill:removeSkill', function(source, cb, skill)
+ESX.RegisterServerCallback('ku_skills:removeSkill', function(source, cb, skill)
     local xPlayer = ESX.GetPlayerFromId(source)
     remove_skill(xPlayer, skill)
     cb()
 end)
 
-ESX.RegisterServerCallback('esx_jobs_skill:getInventoryItem', function(source, cb, name)
+ESX.RegisterServerCallback('ku_skills:getInventoryItem', function(source, cb, name)
     local xPlayer = ESX.GetPlayerFromId(source)
     cb(xPlayer.getInventoryItem(name))
 end)
@@ -372,7 +439,7 @@ end)
 -- Execute working actions
 --******************************************************************
 function start_working(xPlayer, skill)
-    local step = get_job_step(skill)
+    local step = get_industry_step(skill)
 
     if not isVehicleCloseEnough(xPlayer, step) then
         TriggerClientEvent('esx:showNotification', xPlayer.source, _U("working_vehicle_too_far"))
@@ -383,11 +450,11 @@ function start_working(xPlayer, skill)
     increase_skill(xPlayer, skill)
 end
 
-TriggerEvent('esx_jobs:registerHook', "overrides", "add_item", "ku_jobs_skills_execute_skill", function (params)
+TriggerEvent('esx_jobs:registerHook', 'overrides', 'add_item', 'ku_skills_skills_execute_skill', function (params)
     local xPlayer = params.xPlayer
-    local skill = get_skill(xPlayer, xPlayer.job.name, params.item.db_name)
+    local skill = get_user_skill(xPlayer, xPlayer.job.name, params.item.db_name)
 
-    function start_working(xPlayer, skill)
+    start_working(xPlayer, skill)
 end)
 
 --******************************************************************

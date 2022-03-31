@@ -15,3 +15,6 @@
 ```
 start ku_jobs_skills
 ```
+
+## TODO
+- Decrease skill based on unused time
